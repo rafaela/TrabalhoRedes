@@ -1,7 +1,7 @@
 #coding: utf-8
 
 from TcpServer import *
-from socket import *
+import socket
 
 arquivos = open('arquivo_configuracao.txt', 'r')
 texto = arquivos.read()
@@ -19,14 +19,18 @@ while(True):
 
 	listHashRecebidos = []
 	for ip in listServerName:
-		if ip == '':
+		try:
+			if ip == '':
+				continue
+			clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			clientSocket.connect((ip, serverPort))
+			clientSocket.send(pesquisaArquivo.encode('utf-8'))
+			listHashRecebidos.append('download:'+ clientSocket.recv(1024).decode('utf-8'))
+			clientSocket.close()
+		except socket.error:
 			continue
-		clientSocket = socket(AF_INET, SOCK_STREAM)
-		clientSocket.connect((ip, serverPort))
-		clientSocket.send(pesquisaArquivo.encode('utf-8'))
-		listHashRecebidos.append('download:'+ clientSocket.recv(1024).decode('utf-8'))
-		clientSocket.close()
-	
+		
+
 	achou = False
 	for indice,hash in enumerate(listHashRecebidos):
 		if(not hash.__contains__("None")):
@@ -52,10 +56,14 @@ while(True):
 
 		hashEscolhido = listHashRecebidos[indiceHash]
 		ipEscolhido = listServerName[indiceHash]
-
-		clientSocket = socket(AF_INET, SOCK_STREAM)
-		clientSocket.connect((ipEscolhido, serverPort))
-		clientSocket.send(hashEscolhido.encode('utf-8'))
+		
+		try:
+			clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			clientSocket.connect((ipEscolhido, serverPort))
+			clientSocket.send(hashEscolhido.encode('utf-8'))
+		except socket.error:
+			clientSocket.close()
+			continue
 
 		# Cria um nome do arquivo
 		# OBS.: O tipo do arquivo deve ser o mesmo que o cliente está enviando. Sendo assim se
